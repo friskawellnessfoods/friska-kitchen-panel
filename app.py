@@ -15,7 +15,13 @@ def run(mode):
 
     with st.spinner("Generating PDF..."):
 
-        subprocess.run(["python", "daily_list_pc_version.py", date_str, mode])
+        result = subprocess.run(
+            ["python", "daily_list_pc_version.py", date_str, mode],
+            capture_output=True,
+            text=True
+        )
+
+        st.text(result.stdout)
 
     date_obj = datetime.strptime(date_str,"%Y-%m-%d")
     file_date = date_obj.strftime("%d-%b-%y")
@@ -35,7 +41,7 @@ def run(mode):
             )
 
     else:
-        st.error("PDF not generated. Check script logs.")
+        st.error("PDF not generated.")
 
 col1, col2 = st.columns(2)
 
