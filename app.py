@@ -3,6 +3,7 @@ import subprocess
 import os
 import sys
 from datetime import datetime
+import base64
 
 st.set_page_config(page_title="Friska Kitchen Panel", layout="centered")
 
@@ -15,12 +16,13 @@ date_str = date.strftime("%Y-%m-%d")
 
 def run(mode):
 
-    # run script silently (no spinner, no output)
-    subprocess.run(
-        [sys.executable, "daily_list_pc_version.py", date_str, mode],
-        capture_output=True,
-        text=True
-    )
+    with st.spinner("Preparing file..."):
+
+        subprocess.run(
+            [sys.executable, "daily_list_pc_version.py", date_str, mode],
+            capture_output=True,
+            text=True
+        )
 
     date_obj = datetime.strptime(date_str,"%Y-%m-%d")
     file_date = date_obj.strftime("%d-%b-%y")
@@ -32,14 +34,22 @@ def run(mode):
         with open(filename, "rb") as f:
             pdf = f.read()
 
-        # invisible auto download
-        st.download_button(
-            label="Download",
-            data=pdf,
-            file_name=filename,
-            mime="application/pdf",
-            key=mode
+        b64 = base64.b64encode(pdf).decode()
+
+        # auto download via javascript
+        st.markdown(
+            f"""
+            <script>
+            const link = document.createElement('a');
+            link.href = 'data:application/pdf;base64,{b64}';
+            link.download = '{filename}';
+            link.click();
+            </script>
+            """,
+            unsafe_allow_html=True
         )
+
+        st.success("File ready. Download started.")
 
     else:
 
