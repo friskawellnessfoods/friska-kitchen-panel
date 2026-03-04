@@ -1,6 +1,8 @@
 streamlit
-pandas
-gspread
-google-auth
-pillow
+PyPDF2
+Pillow
 reportlab
+requests
+google-auth
+google-auth-httplib2
+google-auth-oauthlib
