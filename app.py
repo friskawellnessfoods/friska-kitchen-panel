@@ -10,6 +10,15 @@ st.set_page_config(page_title="Friska Kitchen Panel", layout="centered")
 st.markdown("""
 <style>
 
+.block-container {
+    max-width:700px;
+}
+
+.logo-container {
+    text-align:center;
+    margin-bottom:10px;
+}
+
 div.stButton > button {
     width:100%;
     padding:14px;
@@ -25,12 +34,12 @@ div.stButton > button:hover {
     background:#1565c0;
 }
 
-.block-container {
-    max-width:700px;
-}
-
 </style>
 """, unsafe_allow_html=True)
+
+# ---------- LOGO ----------
+if os.path.exists("logo.png"):
+    st.image("logo.png", width=160)
 
 # ---------- HEADER ----------
 st.title("Friska Daily Kitchen Panel")
@@ -70,7 +79,6 @@ def run(mode):
     else:
 
         st.error("PDF not generated.")
-
 
 # ---------- BUTTON GRID ----------
 col1, col2 = st.columns(2)
