@@ -130,7 +130,8 @@ def save_last_used(month_name: str = "", date_in: str = "") -> None:
 def get_creds():
 
     import streamlit as st
-    sa_info = json.loads(st.secrets["google"]["service_account_json"])
+
+    sa_info = st.secrets["google"]["service_account_json"]
 
     creds = service_account.Credentials.from_service_account_info(
         sa_info,
