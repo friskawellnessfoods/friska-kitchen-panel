@@ -1,7 +1,6 @@
 import streamlit as st
 import subprocess
 import os
-import sys
 from datetime import datetime
 
 st.set_page_config(page_title="Friska Kitchen Panel", layout="centered")
@@ -9,21 +8,17 @@ st.set_page_config(page_title="Friska Kitchen Panel", layout="centered")
 st.title("Friska Daily Kitchen Panel")
 
 date = st.date_input("Select Date")
-
 date_str = date.strftime("%Y-%m-%d")
+
 
 def run(mode):
 
-    with st.spinner("Generating PDF..."):
-
-        result = subprocess.run(
-            [sys.executable, "daily_list_pc_version.py", date_str, mode],
-            capture_output=True,
-            text=True
-        )
-
-        st.text(result.stdout)
-        st.text(result.stderr)
+    # run generator silently
+    subprocess.run(
+        ["python3", "daily_list_pc_version.py", date_str, mode],
+        capture_output=True,
+        text=True
+    )
 
     date_obj = datetime.strptime(date_str,"%Y-%m-%d")
     file_date = date_obj.strftime("%d-%b-%y")
@@ -32,20 +27,29 @@ def run(mode):
 
     if os.path.isfile(filename):
 
-        st.success("PDF Ready")
+        with open(filename, "rb") as f:
+            pdf = f.read()
 
-        with open(filename,"rb") as f:
+        st.download_button(
+            label="Download",
+            data=pdf,
+            file_name=filename,
+            mime="application/pdf",
+            key=mode
+        )
 
-            st.download_button(
-                label="Download PDF",
-                data=f,
-                file_name=filename
-            )
-
-    else:
-
-        st.error("PDF not generated.")
-        st.write("Files in folder:", os.listdir("."))
+        # auto trigger download
+        st.markdown(
+            f"""
+            <script>
+            var link = document.createElement('a');
+            link.href = 'data:application/pdf;base64,{pdf.hex()}';
+            link.download = '{filename}';
+            link.click();
+            </script>
+            """,
+            unsafe_allow_html=True
+        )
 
 
 col1, col2 = st.columns(2)
