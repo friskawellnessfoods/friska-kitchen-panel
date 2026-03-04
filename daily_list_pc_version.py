@@ -1150,6 +1150,10 @@ def _parse_month_input(mstr: str, default_month_num: int) -> Tuple[int, str]:
         return i, calendar.month_name[i]
 
     raise ValueError(f"Unrecognized month: {mstr}")
+mode = "full"
+
+if len(sys.argv) >= 3:
+    mode = sys.argv[2]
 
 def main():
     creds = get_creds()
