@@ -13,7 +13,9 @@ date_str = date.strftime("%Y-%m-%d")
 
 def run(mode):
 
-    subprocess.run(["python", "daily_list_pc_version.py", date_str, mode])
+    with st.spinner("Generating PDF..."):
+
+        subprocess.run(["python", "daily_list_pc_version.py", date_str, mode])
 
     date_obj = datetime.strptime(date_str,"%Y-%m-%d")
     file_date = date_obj.strftime("%d-%b-%y")
@@ -21,6 +23,8 @@ def run(mode):
     filename = f"{file_date} list.pdf"
 
     if os.path.exists(filename):
+
+        st.success("PDF Ready")
 
         with open(filename,"rb") as f:
 
@@ -30,9 +34,13 @@ def run(mode):
                 file_name=filename
             )
 
+    else:
+        st.error("PDF not generated. Check script logs.")
+
 col1, col2 = st.columns(2)
 
 with col1:
+
     if st.button("Full List"):
         run("full")
 
@@ -43,6 +51,7 @@ with col1:
         run("tags")
 
 with col2:
+
     if st.button("Client List"):
         run("client")
 
