@@ -746,12 +746,18 @@ def _wrap_line(draw, text, font, max_width):
     return lines
 
 def _choose_font_path():
-    for p in ["arial.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "C:\\Windows\\Fonts\\arial.ttf"]:
-        try:
-            _ImageFont.truetype(p, 12)
+
+    for p in [
+        "mealtag_font.ttf",
+        "clienttag_font.ttf",
+        "DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "arial.ttf",
+        "C:\\Windows\\Fonts\\arial.ttf"
+    ]:
+        if os.path.exists(p):
             return p
-        except:
-            continue
+
     raise RuntimeError("No suitable font found.")
 
 def _clean_meal_type(meal_type):
