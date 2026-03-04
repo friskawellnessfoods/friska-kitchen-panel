@@ -128,30 +128,15 @@ def save_last_used(month_name: str = "", date_in: str = "") -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 def get_creds():
-    """
-    Server-safe Google authentication using Service Account.
-    Works on:
-    - Streamlit Cloud
-    - Servers
-    - Phones
-    - Local PC (optional fallback)
 
-    NO browser, NO token.pickle, NO expiry issues.
-    """
-
-    # --- Streamlit Cloud ---
-    try:
-        import streamlit as st
-        sa_info = json.loads(st.secrets["google"]["service_account_json"])
-    except Exception:
-        # --- Local fallback (optional, for PC testing only) ---
-        with open("service_account.json", "r", encoding="utf-8") as f:
-            sa_info = json.load(f)
+    with open("service_account.json", "r", encoding="utf-8") as f:
+        sa_info = json.load(f)
 
     creds = service_account.Credentials.from_service_account_info(
         sa_info,
         scopes=SCOPES
     )
+
     return creds
 
 
