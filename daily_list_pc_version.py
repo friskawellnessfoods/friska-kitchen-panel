@@ -1337,10 +1337,11 @@ def main():
     total_tags = meal_count + carrybag_count
     print(f"\nMeal tags: {meal_count} | Carrybag tags: {carrybag_count} | Total: {total_tags}")
 
-    try:
-        input("\nPress Enter to exit...")
-    except Exception:
-        pass
+    if sys.stdin.isatty():
+        try:
+            input("\nPress Enter to exit...")
+        except Exception:
+            pass
 
 if __name__ == "__main__":
 
