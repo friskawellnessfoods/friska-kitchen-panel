@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+google-auth
+requests
+pillow
+reportlab
+PyPDF2
