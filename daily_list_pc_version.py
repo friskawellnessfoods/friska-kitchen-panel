@@ -1150,10 +1150,6 @@ def _parse_month_input(mstr: str, default_month_num: int) -> Tuple[int, str]:
         return i, calendar.month_name[i]
 
     raise ValueError(f"Unrecognized month: {mstr}")
-mode = "full"
-
-if len(sys.argv) >= 3:
-    mode = sys.argv[2]
 
 def main():
     creds = get_creds()
@@ -1319,29 +1315,11 @@ def main():
         carrybag_count = 0
     _bar(95)
 
-    # Decide which PDF to export based on mode
-
-if mode == "full":
+    # Merge to final: TAGS FIRST, then Page1, Page2, Page3, Delivery (if present)
     pdfs_to_merge = [tags_bytes, p1_bytes, p2_bytes, p3_bytes]
-
     if DELIVERY_ENABLED and p_delivery_bytes is not None:
         pdfs_to_merge.append(p_delivery_bytes)
 
-elif mode == "client":
-    pdfs_to_merge = [p1_bytes]
-
-elif mode == "meals":
-    pdfs_to_merge = [p2_bytes]
-
-elif mode == "tags":
-    pdfs_to_merge = [tags_bytes]
-
-elif mode == "delivery":
-    pdfs_to_merge = [p_delivery_bytes]
-
-else:
-    pdfs_to_merge = [tags_bytes, p1_bytes, p2_bytes, p3_bytes]
-    
     merge_pdfs_bytes_to_file(pdfs_to_merge, final_output_pdf)
     _bar(100)
 
