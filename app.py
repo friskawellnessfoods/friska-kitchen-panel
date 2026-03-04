@@ -1,6 +1,7 @@
 import streamlit as st
 import subprocess
 import os
+import sys
 from datetime import datetime
 
 st.set_page_config(page_title="Friska Kitchen Panel", layout="centered")
@@ -8,14 +9,15 @@ st.set_page_config(page_title="Friska Kitchen Panel", layout="centered")
 st.title("Friska Daily Kitchen Panel")
 
 date = st.date_input("Select Date")
+
 date_str = date.strftime("%Y-%m-%d")
 
 
 def run(mode):
 
-    # run generator silently
+    # run script silently (no spinner, no output)
     subprocess.run(
-        ["python3", "daily_list_pc_version.py", date_str, mode],
+        [sys.executable, "daily_list_pc_version.py", date_str, mode],
         capture_output=True,
         text=True
     )
@@ -30,6 +32,7 @@ def run(mode):
         with open(filename, "rb") as f:
             pdf = f.read()
 
+        # invisible auto download
         st.download_button(
             label="Download",
             data=pdf,
@@ -38,18 +41,10 @@ def run(mode):
             key=mode
         )
 
-        # auto trigger download
-        st.markdown(
-            f"""
-            <script>
-            var link = document.createElement('a');
-            link.href = 'data:application/pdf;base64,{pdf.hex()}';
-            link.download = '{filename}';
-            link.click();
-            </script>
-            """,
-            unsafe_allow_html=True
-        )
+    else:
+
+        st.error("PDF not generated.")
+        st.write("Files in folder:", os.listdir("."))
 
 
 col1, col2 = st.columns(2)
