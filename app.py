@@ -16,8 +16,7 @@ def run(mode):
     with st.spinner("Generating PDF..."):
 
         result = subprocess.run(
-            ["python", "daily_list_pc_version.py", date_str, mode],
-            cwd=".",
+            ["python3", "daily_list_pc_version.py", date_str, mode],
             capture_output=True,
             text=True
         )
