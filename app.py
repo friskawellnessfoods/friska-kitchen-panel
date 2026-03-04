@@ -17,6 +17,7 @@ def run(mode):
 
         result = subprocess.run(
             ["python", "daily_list_pc_version.py", date_str, mode],
+            cwd=".",
             capture_output=True,
             text=True
         )
@@ -28,7 +29,7 @@ def run(mode):
 
     filename = f"{file_date} list.pdf"
 
-    if os.path.exists(filename):
+    if os.path.isfile(filename):
 
         st.success("PDF Ready")
 
@@ -41,7 +42,9 @@ def run(mode):
             )
 
     else:
+
         st.error("PDF not generated.")
+        st.write("Files in folder:", os.listdir("."))
 
 col1, col2 = st.columns(2)
 
