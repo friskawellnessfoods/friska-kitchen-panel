@@ -1,6 +1,7 @@
 import streamlit as st
 import subprocess
 import os
+import sys
 from datetime import datetime
 
 st.set_page_config(page_title="Friska Kitchen Panel", layout="centered")
@@ -16,12 +17,13 @@ def run(mode):
     with st.spinner("Generating PDF..."):
 
         result = subprocess.run(
-            ["python3", "daily_list_pc_version.py", date_str, mode],
+            [sys.executable, "daily_list_pc_version.py", date_str, mode],
             capture_output=True,
             text=True
         )
 
         st.text(result.stdout)
+        st.text(result.stderr)
 
     date_obj = datetime.strptime(date_str,"%Y-%m-%d")
     file_date = date_obj.strftime("%d-%b-%y")
@@ -44,6 +46,7 @@ def run(mode):
 
         st.error("PDF not generated.")
         st.write("Files in folder:", os.listdir("."))
+
 
 col1, col2 = st.columns(2)
 
