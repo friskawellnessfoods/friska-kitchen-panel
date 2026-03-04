@@ -136,8 +136,6 @@ Tags
 
 <script>
 
-const API="http://127.0.0.1:8000"
-
 function run(type){
 
 const date=document.getElementById("date").value
@@ -147,11 +145,12 @@ alert("Select date")
 return
 }
 
-window.open(`${API}/${type}?date=${date}`,"_blank")
+window.open(`?mode=${type}&date=${date}`,"_blank")
 
 }
 
 </script>
 
 </body>
+
 </html>
