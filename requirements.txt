@@ -1,7 +1,6 @@
-fastapi
-uvicorn
+streamlit
+pandas
+gspread
 google-auth
-requests
 pillow
 reportlab
-PyPDF2
