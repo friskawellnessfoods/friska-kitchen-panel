@@ -41,13 +41,32 @@ date_str = date.strftime("%Y-%m-%d")
 
 def generate():
 
-    with st.spinner("Preparing kitchen list..."):
+    progress = st.progress(0)
+    status = st.empty()
 
-        subprocess.run(
-            [sys.executable, "daily_list_pc_version.py", date_str],
-            capture_output=True,
-            text=True
-        )
+    process = subprocess.Popen(
+        [sys.executable, "daily_list_pc_version.py", date_str],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True
+    )
+
+    percent = 0
+
+    for line in process.stdout:
+
+        if "%" in line:
+            try:
+                percent = int(line.split("%")[0].split()[-1])
+                progress.progress(percent)
+                status.text(f"Preparing kitchen list... {percent}%")
+            except:
+                pass
+
+    process.wait()
+
+    progress.progress(100)
+    status.text("Finalizing PDF...")
 
     file_date = datetime.strptime(date_str,"%Y-%m-%d").strftime("%d-%b-%y")
     filename = f"{file_date} list.pdf"
