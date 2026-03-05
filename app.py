@@ -95,3 +95,6 @@ def generate():
 
         st.error("PDF not generated.")
         st.write("Files present:", os.listdir("."))
+
+if st.button("Generate Kitchen List"):
+    generate()
