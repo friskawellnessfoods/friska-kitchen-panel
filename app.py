@@ -44,47 +44,43 @@ def generate():
     progress = st.progress(0)
     status = st.empty()
 
-    # Convert date to month/day for script input
-    month = date.strftime("%b")   # Mar
-    day = date.day                # 5
+    # Convert date for script
+    month = date.strftime("%b")
+    day = date.day
 
+    # DEBUG OUTPUT
+    st.write("Debug → Month sent to script:", month)
+    st.write("Debug → Day sent to script:", day)
+    st.write("Debug → Full date selected:", date)
+
+    debug_input = f"{month}\n{day}\n"
+    st.code(debug_input, language="text")
+
+    # Run production script
     process = subprocess.Popen(
         [sys.executable, "daily_list_pc_version.py"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1
+        text=True
     )
 
-    # Send inputs exactly like keyboard
-    process.stdin.write(f"{month}\n")
-    process.stdin.write(f"{day}\n")
-    process.stdin.flush()
+    # Send inputs exactly like terminal typing
+    stdout, _ = process.communicate(f"{month}\n{day}\n")
 
-    percent = 0
+    progress.progress(100)
+    status.text("Finalizing PDF...")
 
-    for line in process.stdout:
+    # Show script output (debug)
+    st.text(stdout)
 
-        if "%" in line:
-            try:
-                percent = int(line.split("%")[0].split()[-1])
-                progress.progress(percent)
-                status.text(f"Preparing kitchen list... {percent}%")
-            except:
-                pass
-    
-    process.wait()
-    
-    # SHOW SCRIPT OUTPUT (this is the new line)
-    st.text(process.stdout.read())
-
+    # Expected PDF filename
     file_date = date.strftime("%d-%b-%y")
     filename = f"{file_date} list.pdf"
 
     if os.path.isfile(filename):
 
-        with open(filename,"rb") as f:
+        with open(filename, "rb") as f:
 
             st.success("Kitchen list ready")
 
@@ -99,6 +95,3 @@ def generate():
 
         st.error("PDF not generated.")
         st.write("Files present:", os.listdir("."))
-
-if st.button("Generate Kitchen List"):
-    generate()
