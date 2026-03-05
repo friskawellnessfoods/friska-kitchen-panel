@@ -128,15 +128,32 @@ def save_last_used(month_name: str = "", date_in: str = "") -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 def get_creds():
+    """
+    Server-safe Google authentication using Service Account.
+    Works on:
+    - Streamlit Cloud
+    - Servers
+    - Phones
+    - Local PC (optional fallback)
 
-    import streamlit as st
+    NO browser, NO token.pickle, NO expiry issues.
+    """
+
+    # --- Streamlit Cloud ---
+    try:
+        import streamlit as st
+        sa_info = json.loads(st.secrets["google"]["service_account_json"])
+    except Exception:
+        # --- Local fallback (optional, for PC testing only) ---
+        with open("service_account.json", "r", encoding="utf-8") as f:
+            sa_info = json.load(f)
 
     creds = service_account.Credentials.from_service_account_info(
-        dict(st.secrets["google"]),
+        sa_info,
         scopes=SCOPES
     )
-
     return creds
+
 
 def get_spreadsheet_id_from_url(url: str) -> str:
     m = re.search(r"/spreadsheets/d/([a-zA-Z0-9-_]+)", url)
@@ -746,18 +763,12 @@ def _wrap_line(draw, text, font, max_width):
     return lines
 
 def _choose_font_path():
-
-    for p in [
-        "mealtag_font.ttf",
-        "clienttag_font.ttf",
-        "DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "arial.ttf",
-        "C:\\Windows\\Fonts\\arial.ttf"
-    ]:
-        if os.path.exists(p):
+    for p in ["arial.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "C:\\Windows\\Fonts\\arial.ttf"]:
+        try:
+            _ImageFont.truetype(p, 12)
             return p
-
+        except:
+            continue
     raise RuntimeError("No suitable font found.")
 
 def _clean_meal_type(meal_type):
@@ -1165,56 +1176,99 @@ def main():
     except ValueError as e:
         raise SystemExit(f"Invalid PAGE*_ORIENT value: {e}")
 
+    _bar(0)
+
+    # ---------- Month first (with memory), then Day ----------
+    last = load_last_used()
+    default_month_num = None
+    if isinstance(last, dict) and last.get("month"):
+        try:
+            default_month_num, _ = _parse_month_input(last["month"], date.today().month)
+        except Exception:
+            default_month_num = None
+
+    if default_month_num is None and isinstance(last, dict) and last.get("date"):
+        try:
+            tmp_norm = normalize_input_date(last["date"])
+            default_month_num = datetime.strptime(tmp_norm, "%d-%b-%y").month
+        except Exception:
+            default_month_num = None
+
+    if default_month_num is None:
+        default_month_num = date.today().month
+
+    default_month_name = calendar.month_name[default_month_num]
+
+    print("\nEnter month (name/abbr/number).")
+    print(f"Press Enter to use: {default_month_name}")
+    month_input = input("Month: ").strip()
+    try:
+        month_num, month_name = _parse_month_input(month_input, default_month_num)
+    except ValueError as e:
         _bar(0)
+        raise SystemExit(str(e))
 
-    # ---------- Date from API ----------
-    if len(sys.argv) >= 2:
+    save_last_used(month_name=month_name)
 
-        input_date = sys.argv[1]
+    # Choose year: try to reuse last date's year, else current year
+    default_year = date.today().year
+    if isinstance(last, dict) and last.get("date"):
+        try:
+            tmp_norm = normalize_input_date(last["date"])
+            default_year = datetime.strptime(tmp_norm, "%d-%b-%y").year
+        except Exception:
+            pass
 
-        # Accept formats like 3/2/2026 or 03/02/2026
-        service_dt = datetime.strptime(input_date, "%Y-%m-%d")
+    day_str = input("Service day (1-31): ").strip()
+    if not re.fullmatch(r"\d{1,2}", day_str):
+        raise SystemExit("Please enter a valid day number (1-31).")
+    day_num = int(day_str)
+    if not (1 <= day_num <= 31):
+        raise SystemExit("Day must be in 1..31.")
 
-        month_name = service_dt.strftime("%B")
-        normalized_date = service_dt.strftime("%d-%b-%y")
+    try:
+        service_dt = datetime(default_year, month_num, day_num)
+    except ValueError:
+        service_dt = datetime(default_year, month_num, 1)
 
-        save_last_used(month_name=month_name)
-        save_last_used(date_in=normalized_date)
+    normalized_date = service_dt.strftime("%d-%b-%y")
+    try:
+        normalized_date = normalize_input_date(f"{day_num}-{month_name[:3]}-{service_dt.year}")
+    except Exception:
+        pass
 
-    else:
-        raise SystemExit("Date argument missing")
+    save_last_used(date_in=normalized_date)
 
     final_output_pdf = f"{normalized_date} list.pdf"
 
-    # ---------- Resolve Dailylist sheet ----------
-    dailylist_title = resolve_dailylist_for_month(
-        authed,
-        spreadsheet_id,
-        month_name
-    )
+    _bar(5)
 
-    # ---------- Find start / next rows ----------
-    start_row, next_row = find_start_and_next_rows(
-        authed,
-        spreadsheet_id,
-        dailylist_title,
-        normalized_date
-    )
+    # 0) SILENT CSV from "Menu"
+    generate_dishes_csv_for_date(authed, spreadsheet_id, normalized_date, output_csv="dishes.csv")
+    _bar(25)
 
-    # ---------- Determine Page1 & Page2 end ----------
-    if next_row:
-        end_cm = next_row - 1
+    # 1) Pages 1 & 2 from Dailylist (accept full or abbr month in tab)
+    dailylist_title = resolve_dailylist_for_month(authed, spreadsheet_id, month_name)
+
+    start_row, next_row = find_start_and_next_rows(authed, spreadsheet_id, dailylist_title, normalized_date)
+    merges_12 = get_sheet_merges(authed, spreadsheet_id, dailylist_title)
+    _bar(40)
+
+    end_cm = find_end_by_two_empty_rows(
+        authed, spreadsheet_id, dailylist_title, "C", "M", start_row,
+        max_row=9999, empty_run=2, merges=merges_12
+    )
+    if next_row is not None:
+        end_pz = max(start_row, next_row - 3)
     else:
-        end_cm = find_last_used_row_pz_till_sheet_end(
+        end_pz = find_last_used_row_pz_till_sheet_end(
             authed,
             spreadsheet_id,
             dailylist_title,
             start_row
-        )
+    )
 
-    end_pz = end_cm
-
-    _bar(5)
+    _bar(50)
 
     range1 = f"C{start_row}:M{end_cm}"  # Page 1 (Client list)
     range2 = f"P{start_row}:Z{end_pz}"  # Page 2 (Meal list)
@@ -1326,26 +1380,10 @@ def main():
     total_tags = meal_count + carrybag_count
     print(f"\nMeal tags: {meal_count} | Carrybag tags: {carrybag_count} | Total: {total_tags}")
 
-    if sys.stdin.isatty():
-        try:
-            input("\nPress Enter to exit...")
-        except Exception:
-            pass
+    try:
+        input("\nPress Enter to exit...")
+    except Exception:
+        pass
 
 if __name__ == "__main__":
-
-    if len(sys.argv) >= 3:
-
-        date_input = sys.argv[1]
-        mode = sys.argv[2]
-
-        # Accept 3/2/2026 format
-        dt = datetime.strptime(date_input, "%Y-%m-%d")
-        normalized = dt.strftime("%d-%b-%y")
-
-        save_last_used(date_in=normalized)
-
-        main()
-
-    else:
-        main()
+    main()
