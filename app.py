@@ -73,12 +73,11 @@ def generate():
                 status.text(f"Preparing kitchen list... {percent}%")
             except:
                 pass
-
-    stdout, _ = process.communicate()
-    st.text(stdout)
-
-    progress.progress(100)
-    status.text("Finalizing PDF...")
+    
+    process.wait()
+    
+    # SHOW SCRIPT OUTPUT (this is the new line)
+    st.text(process.stdout.read())
 
     file_date = date.strftime("%d-%b-%y")
     filename = f"{file_date} list.pdf"
