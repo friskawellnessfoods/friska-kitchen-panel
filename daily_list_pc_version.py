@@ -131,26 +131,25 @@ def get_creds():
 
     try:
         import streamlit as st
+        import base64
+        import json
 
-        creds = service_account.Credentials.from_service_account_info(
-            st.secrets["google"],
-            scopes=SCOPES
-        )
+        sa_json = base64.b64decode(
+            st.secrets["google"]["service_account_base64"]
+        ).decode("utf-8")
 
-        return creds
+        sa_info = json.loads(sa_json)
 
     except Exception:
-
         with open("service_account.json", "r", encoding="utf-8") as f:
             sa_info = json.load(f)
 
-        creds = service_account.Credentials.from_service_account_info(
-            sa_info,
-            scopes=SCOPES
-        )
+    creds = service_account.Credentials.from_service_account_info(
+        sa_info,
+        scopes=SCOPES
+    )
 
-        return creds
-
+    return creds
 
 def get_spreadsheet_id_from_url(url: str) -> str:
     m = re.search(r"/spreadsheets/d/([a-zA-Z0-9-_]+)", url)
