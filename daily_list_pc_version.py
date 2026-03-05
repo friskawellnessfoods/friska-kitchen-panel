@@ -718,12 +718,14 @@ from PIL import Image as _Image, ImageDraw as _ImageDraw, ImageFont as _ImageFon
 from reportlab.pdfgen import canvas as _canvas
 from reportlab.lib.pagesizes import A4 as _A4
 from reportlab.lib.utils import ImageReader as _ImageReader
+import os
 
 MEAL_TEMPLATE_FILE = "tag_template.png"
 CARRYBAG_TEMPLATE_FILE = "carrybag_tags.png"
 DISHES_FILE = "dishes.csv"
 BORDER_MARGIN_MM = 7
 LINE_SPACING_FACTOR = 0.28
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Column indexes in D..M
 COL_CLIENT = 0
@@ -759,13 +761,13 @@ def _wrap_line(draw, text, font, max_width):
     return lines
 
 def _choose_font_path():
-    for p in ["arial.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "C:\\Windows\\Fonts\\arial.ttf"]:
-        try:
-            _ImageFont.truetype(p, 12)
-            return p
-        except:
-            continue
-    raise RuntimeError("No suitable font found.")
+    font_path = os.path.join(BASE_DIR, "mealtag_font.ttf")
+
+    try:
+        _ImageFont.truetype(font_path, 12)
+        return font_path
+    except Exception as e:
+        raise RuntimeError(f"Font not found: {font_path}")
 
 def _clean_meal_type(meal_type):
     return re.sub(r"^\s*\d+[\.\-\s]*", "", meal_type)
