@@ -48,13 +48,6 @@ def generate():
     month = date.strftime("%b")
     day = date.day
 
-    # DEBUG OUTPUT
-    st.write("Debug → Month sent to script:", month)
-    st.write("Debug → Day sent to script:", day)
-    st.write("Debug → Full date selected:", date)
-
-    debug_input = f"{month}\n{day}\n"
-    st.code(debug_input, language="text")
 
     # Run production script
     process = subprocess.Popen(
@@ -65,15 +58,25 @@ def generate():
         text=True
     )
 
-    # Send inputs exactly like terminal typing
-    stdout, _ = process.communicate(f"{month}\n{day}\n")
-
-    progress.progress(100)
-    status.text("Finalizing PDF...")
-
-    # Show script output (debug)
-    st.text(stdout)
-
+    # Send inputs to script
+    process.stdin.write(f"{month}\n{day}\n")
+    process.stdin.flush()
+    
+    # Read script output and update progress bar
+    for line in process.stdout:
+    
+        line = line.strip()
+    
+        if "%" in line:
+            try:
+                percent = int(line.split("%")[0].split()[-1])
+                progress.progress(percent)
+                status.text(f"Preparing kitchen list... {percent}%")
+            except:
+                pass
+    
+    process.wait()
+    
     # Expected PDF filename
     file_date = date.strftime("%d-%b-%y")
     filename = f"{file_date} list.pdf"
