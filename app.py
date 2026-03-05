@@ -59,7 +59,7 @@ def generate():
     )
 
     # Send inputs to script
-    process.stdin.write(f"{month}\n{day}\n")
+    process.stdin.write(f"{month}\n{day}\n\n")
     process.stdin.flush()
     
     # Read script output and update progress bar
