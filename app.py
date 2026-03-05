@@ -9,8 +9,26 @@ st.set_page_config(page_title="Friska Kitchen Panel", layout="centered")
 # -------- UI STYLE --------
 st.markdown("""
 <style>
-.block-container {max-width:700px;}
 
+/* FORCE LIGHT THEME */
+html, body, [class*="css"]  {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}
+
+/* Limit width for mobile */
+.block-container {
+    max-width:700px;
+}
+
+/* Center logo */
+.logo-container {
+    display:flex;
+    justify-content:center;
+    margin-bottom:10px;
+}
+
+/* Button styling */
 div.stButton > button {
     width:100%;
     padding:16px;
@@ -25,13 +43,16 @@ div.stButton > button {
 div.stButton > button:hover {
     background:#1565c0;
 }
+
 </style>
 """, unsafe_allow_html=True)
 
 # -------- LOGO --------
 if os.path.exists("logo.png"):
+    st.markdown('<div class="logo-container">', unsafe_allow_html=True)
     st.image("logo.png", width=160)
-
+    st.markdown('</div>', unsafe_allow_html=True)
+    
 st.title("Friska Daily Kitchen Panel")
 
 date = st.date_input("Select Date")
