@@ -74,7 +74,8 @@ def generate():
             except:
                 pass
 
-    process.wait()
+    stdout, _ = process.communicate()
+    st.text(stdout)
 
     progress.progress(100)
     status.text("Finalizing PDF...")
