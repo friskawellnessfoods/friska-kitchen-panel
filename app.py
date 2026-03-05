@@ -44,12 +44,23 @@ def generate():
     progress = st.progress(0)
     status = st.empty()
 
+    # Convert date to month/day for script input
+    month = date.strftime("%b")   # Mar
+    day = date.day                # 5
+
     process = subprocess.Popen(
-        [sys.executable, "daily_list_pc_version.py", date_str],
+        [sys.executable, "daily_list_pc_version.py"],
+        stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        text=True
+        text=True,
+        bufsize=1
     )
+
+    # Send inputs exactly like keyboard
+    process.stdin.write(f"{month}\n")
+    process.stdin.write(f"{day}\n")
+    process.stdin.flush()
 
     percent = 0
 
@@ -68,7 +79,7 @@ def generate():
     progress.progress(100)
     status.text("Finalizing PDF...")
 
-    file_date = datetime.strptime(date_str,"%Y-%m-%d").strftime("%d-%b-%y")
+    file_date = date.strftime("%d-%b-%y")
     filename = f"{file_date} list.pdf"
 
     if os.path.isfile(filename):
@@ -88,7 +99,3 @@ def generate():
 
         st.error("PDF not generated.")
         st.write("Files present:", os.listdir("."))
-
-
-if st.button("Generate Kitchen List"):
-    generate()
