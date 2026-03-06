@@ -840,15 +840,8 @@ def _draw_carrybag_tag(template_img, client, dishes, meal_type, remarks, slot, f
 
     area_w = tag.width - 2*margin_x
     area_h = tag.height - 2*margin_y
+    scale = 1.0
 
-    dish_size = CARRYBAG_FONT_SIZES["dish"]
-
-    # shrink dish font if too many lines
-    max_lines = 6
-    estimated_lines = len(dishes)
-    
-    if estimated_lines > max_lines:
-        dish_size = int(dish_size * 0.8)
 
     while True:
 
@@ -862,23 +855,23 @@ def _draw_carrybag_tag(template_img, client, dishes, meal_type, remarks, slot, f
             if estimated_lines > 6:
                 client_size = int(client_size * 0.85)
             
-            fnt_client = _ImageFont.truetype(font_path, client_size)
+            fnt_client = _ImageFont.truetype(font_path, int(client_size * scale))
             wrapped.append((_wrap_line(draw, client, fnt_client, area_w), fnt_client))
 
         for dish in dishes:
-            fnt_dish = _ImageFont.truetype(font_path, dish_size)
+            fnt_dish = _ImageFont.truetype(font_path, int(CARRYBAG_FONT_SIZES["dish"] * scale))
             wrapped.append((_wrap_line(draw, dish, fnt_dish, area_w), fnt_dish))
 
         if meal_type:
-            fnt_meal = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["meal"])
+            fnt_meal = _ImageFont.truetype(font_path, int(CARRYBAG_FONT_SIZES["meal"] * scale))
             wrapped.append((_wrap_line(draw, _clean_meal_type(meal_type), fnt_meal, area_w), fnt_meal))
 
         if remarks:
-            fnt_rem = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["remarks"])
+            fnt_rem = _ImageFont.truetype(font_path, int(CARRYBAG_FONT_SIZES["remarks"] * scale))
             wrapped.append((_wrap_line(draw, remarks, fnt_rem, area_w), fnt_rem))
 
         if slot and slot.strip().lower() != "afternoon":
-            fnt_slot = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["remarks"])
+            fnt_slot = _ImageFont.truetype(font_path, int(CARRYBAG_FONT_SIZES["remarks"] * scale))
             wrapped.append((_wrap_line(draw, slot, fnt_slot, area_w), fnt_slot))
 
         total_h = 0
@@ -891,8 +884,8 @@ def _draw_carrybag_tag(template_img, client, dishes, meal_type, remarks, slot, f
         if total_h <= area_h:
             break
 
-        dish_size -= 4
-        if dish_size < 40:
+        scale -= 0.05
+        if scale < 0.6:
             break
 
     y = margin_y + (area_h-total_h)//2
