@@ -840,54 +840,57 @@ def _draw_carrybag_tag(template_img, client, dishes, meal_type, remarks, slot, f
 
     area_w = tag.width - 2*margin_x
     area_h = tag.height - 2*margin_y
-    scale = 1.0
 
+    scale = 1.0
 
     while True:
 
         wrapped = []
 
+        # Client
         if client:
-            client_size = CARRYBAG_FONT_SIZES["client"]
-
-            # shrink client name if many lines
-            estimated_lines = len(dishes) + 3
-            if estimated_lines > 6:
-                client_size = int(client_size * 0.85)
-            
-            fnt_client = _ImageFont.truetype(font_path, int(client_size * scale))
+            fnt_client = _ImageFont.truetype(font_path, int(CARRYBAG_FONT_SIZES["client"] * scale))
             wrapped.append((_wrap_line(draw, client, fnt_client, area_w), fnt_client))
 
+        # Dishes
         for dish in dishes:
             fnt_dish = _ImageFont.truetype(font_path, int(CARRYBAG_FONT_SIZES["dish"] * scale))
             wrapped.append((_wrap_line(draw, dish, fnt_dish, area_w), fnt_dish))
 
+        # Meal type
         if meal_type:
             fnt_meal = _ImageFont.truetype(font_path, int(CARRYBAG_FONT_SIZES["meal"] * scale))
             wrapped.append((_wrap_line(draw, _clean_meal_type(meal_type), fnt_meal, area_w), fnt_meal))
 
+        # Remarks
         if remarks:
             fnt_rem = _ImageFont.truetype(font_path, int(CARRYBAG_FONT_SIZES["remarks"] * scale))
             wrapped.append((_wrap_line(draw, remarks, fnt_rem, area_w), fnt_rem))
 
+        # Slot (skip afternoon)
         if slot and slot.strip().lower() != "afternoon":
             fnt_slot = _ImageFont.truetype(font_path, int(CARRYBAG_FONT_SIZES["remarks"] * scale))
             wrapped.append((_wrap_line(draw, slot, fnt_slot, area_w), fnt_slot))
 
-        total_h = 0
-        line_spacing_px = int(LINE_SPACING_FACTOR * dish_size)
+        # spacing
+        line_spacing_px = int(LINE_SPACING_FACTOR * CARRYBAG_FONT_SIZES["dish"] * scale)
 
+        # calculate total height
+        total_h = 0
         for lines, fnt in wrapped:
             line_h = fnt.getbbox("Ag")[3] - fnt.getbbox("Ag")[1]
             total_h += len(lines)*line_h + (len(lines)-1)*line_spacing_px
 
+        # if fits → stop shrinking
         if total_h <= area_h:
             break
 
+        # otherwise shrink fonts slightly
         scale -= 0.05
         if scale < 0.6:
             break
 
+    # vertical centering
     y = margin_y + (area_h-total_h)//2
 
     for lines, fnt in wrapped:
