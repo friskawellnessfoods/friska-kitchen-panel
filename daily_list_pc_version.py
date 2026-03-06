@@ -828,41 +828,96 @@ def _draw_meal_tag(template_img, texts, font_path, skip_all=False, skip_meal_typ
             y += line_h + line_spacing_px
     return tag
 
-def _draw_carrybag_tag(template_img, client, dishes, meal_type, remarks, font_path):
+def _draw_carrybag_tag(template_img, client, dishes, meal_type, remarks, slot, font_path):
     tag = template_img.copy()
     draw = _ImageDraw.Draw(tag)
+
     dpi_x, dpi_y = template_img.info.get("dpi", (300, 300))
     margin_x = _mm_to_px(BORDER_MARGIN_MM, dpi_x)
     margin_y = _mm_to_px(BORDER_MARGIN_MM, dpi_y)
-    area_w, area_h = tag.width - 2 * margin_x, tag.height - 2 * margin_y
 
-    wrapped, line_spacing_px = [], int(LINE_SPACING_FACTOR * max(CARRYBAG_FONT_SIZES.values()))
+    area_w = tag.width - 2 * margin_x
+    area_h = tag.height - 2 * margin_y
 
+    line_spacing_px = int(LINE_SPACING_FACTOR * max(CARRYBAG_FONT_SIZES.values()))
+
+    wrapped = []
+
+    # Client
     if client:
         fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["client"])
         wrapped.append((_wrap_line(draw, client, fnt, area_w), fnt))
+
+    # Dishes
     for dish in dishes:
         if dish:
             fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["dish"])
             wrapped.append((_wrap_line(draw, dish, fnt, area_w), fnt))
+
+    # Meal type
     if meal_type:
         fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["meal"])
         wrapped.append((_wrap_line(draw, _clean_meal_type(meal_type), fnt, area_w), fnt))
+
+    # Remarks
     if remarks:
         fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["remarks"])
         wrapped.append((_wrap_line(draw, remarks, fnt, area_w), fnt))
 
-    total_h = sum(len(lines) * (f.getbbox("Ag")[3] - f.getbbox("Ag")[1]) +
-                  (len(lines) - 1) * line_spacing_px
-                  for lines, f in wrapped)
+    # Slot (ONLY if not afternoon)
+    if slot and slot.strip().lower() != "afternoon":
+        fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["remarks"])
+        wrapped.append((_wrap_line(draw, slot, fnt, area_w), fnt))
 
+    # ---- Fit check loop (prevents overflow) ----
+    while True:
+
+        total_h = 0
+        for lines, fnt in wrapped:
+            line_h = fnt.getbbox("Ag")[3] - fnt.getbbox("Ag")[1]
+            total_h += len(lines) * line_h + (len(lines)-1) * line_spacing_px
+
+        if total_h <= area_h:
+            break
+
+        # shrink dish font slightly if overflow
+        new_size = max(40, CARRYBAG_FONT_SIZES["dish"] - 5)
+        CARRYBAG_FONT_SIZES["dish"] = new_size
+
+        wrapped = []
+
+        if client:
+            fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["client"])
+            wrapped.append((_wrap_line(draw, client, fnt, area_w), fnt))
+
+        for dish in dishes:
+            if dish:
+                fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["dish"])
+                wrapped.append((_wrap_line(draw, dish, fnt, area_w), fnt))
+
+        if meal_type:
+            fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["meal"])
+            wrapped.append((_wrap_line(draw, _clean_meal_type(meal_type), fnt, area_w), fnt))
+
+        if remarks:
+            fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["remarks"])
+            wrapped.append((_wrap_line(draw, remarks, fnt, area_w), fnt))
+
+        if slot and slot.strip().lower() != "afternoon":
+            fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["remarks"])
+            wrapped.append((_wrap_line(draw, slot, fnt, area_w), fnt))
+
+    # ---- Draw centered ----
     y = margin_y + (area_h - total_h) // 2
+
     for lines, fnt in wrapped:
         line_h = fnt.getbbox("Ag")[3] - fnt.getbbox("Ag")[1]
+
         for line in lines:
             x = margin_x + (area_w - draw.textlength(line, font=fnt)) // 2
             draw.text((x, y), line, fill=TAG_TEXT_COLOR, font=fnt)
             y += line_h + line_spacing_px
+
     return tag
 
 def run_tag_generator_auto_bytes(authed: AuthorizedSession, spreadsheet_id: str, sheet_name_for_tags: str,
@@ -992,7 +1047,8 @@ def run_tag_generator_auto_bytes(authed: AuthorizedSession, spreadsheet_id: str,
                 "client": group["client"],
                 "dishes": dishes_display,
                 "type": group["type"],
-                "remarks": group["remarks"]
+                "remarks": group["remarks"],
+                "slot": _k_slot
             })
 
         meal_count = len(meal_tags_data)
@@ -1013,6 +1069,7 @@ def run_tag_generator_auto_bytes(authed: AuthorizedSession, spreadsheet_id: str,
             all_tags_imgs.append(_draw_carrybag_tag(
                 carrybag_template,
                 tag_data["client"], tag_data["dishes"], tag_data["type"], tag_data["remarks"],
+                tag_data["slot"],
                 _choose_font_path()
             ))
 
