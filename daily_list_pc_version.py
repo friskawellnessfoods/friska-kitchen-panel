@@ -855,7 +855,14 @@ def _draw_carrybag_tag(template_img, client, dishes, meal_type, remarks, slot, f
         wrapped = []
 
         if client:
-            fnt_client = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["client"])
+            client_size = CARRYBAG_FONT_SIZES["client"]
+
+            # shrink client name if many lines
+            estimated_lines = len(dishes) + 3
+            if estimated_lines > 6:
+                client_size = int(client_size * 0.85)
+            
+            fnt_client = _ImageFont.truetype(font_path, client_size)
             wrapped.append((_wrap_line(draw, client, fnt_client, area_w), fnt_client))
 
         for dish in dishes:
