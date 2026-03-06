@@ -876,11 +876,18 @@ def _draw_carrybag_tag(template_img, client, dishes, meal_type, remarks, slot, f
         line_spacing_px = int(LINE_SPACING_FACTOR * CARRYBAG_FONT_SIZES["dish"] * scale)
 
         # calculate total height
-        total_h = 0
+        all_lines = []
         for lines, fnt in wrapped:
+            for line in lines:
+                all_lines.append((line, fnt))
+        
+        total_h = 0
+        for i, (line, fnt) in enumerate(all_lines):
             line_h = fnt.getbbox("Ag")[3] - fnt.getbbox("Ag")[1]
-            total_h += len(lines)*line_h + (len(lines)-1)*line_spacing_px
-
+            total_h += line_h
+            if i < len(all_lines) - 1:
+                total_h += line_spacing_px
+                
         # if fits → stop shrinking
         if total_h <= area_h:
             break
