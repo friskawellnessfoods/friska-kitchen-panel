@@ -724,7 +724,7 @@ MEAL_TEMPLATE_FILE = "tag_template.png"
 CARRYBAG_TEMPLATE_FILE = "carrybag_tags.png"
 DISHES_FILE = "dishes.csv"
 BORDER_MARGIN_MM = 7
-LINE_SPACING_FACTOR = 0.28
+LINE_SPACING_FACTOR = 0.22
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Column indexes in D..M
@@ -829,93 +829,76 @@ def _draw_meal_tag(template_img, texts, font_path, skip_all=False, skip_meal_typ
     return tag
 
 def _draw_carrybag_tag(template_img, client, dishes, meal_type, remarks, slot, font_path):
+
     tag = template_img.copy()
     draw = _ImageDraw.Draw(tag)
 
-    dpi_x, dpi_y = template_img.info.get("dpi", (300, 300))
+    dpi_x, dpi_y = template_img.info.get("dpi", (300,300))
+
     margin_x = _mm_to_px(BORDER_MARGIN_MM, dpi_x)
     margin_y = _mm_to_px(BORDER_MARGIN_MM, dpi_y)
 
-    area_w = tag.width - 2 * margin_x
-    area_h = tag.height - 2 * margin_y
+    area_w = tag.width - 2*margin_x
+    area_h = tag.height - 2*margin_y
 
-    line_spacing_px = int(LINE_SPACING_FACTOR * max(CARRYBAG_FONT_SIZES.values()))
+    dish_size = CARRYBAG_FONT_SIZES["dish"]
 
-    wrapped = []
+    # shrink dish font if too many lines
+    max_lines = 6
+    estimated_lines = len(dishes)
+    
+    if estimated_lines > max_lines:
+        dish_size = int(dish_size * 0.8)
 
-    # Client
-    if client:
-        fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["client"])
-        wrapped.append((_wrap_line(draw, client, fnt, area_w), fnt))
-
-    # Dishes
-    for dish in dishes:
-        if dish:
-            fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["dish"])
-            wrapped.append((_wrap_line(draw, dish, fnt, area_w), fnt))
-
-    # Meal type
-    if meal_type:
-        fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["meal"])
-        wrapped.append((_wrap_line(draw, _clean_meal_type(meal_type), fnt, area_w), fnt))
-
-    # Remarks
-    if remarks:
-        fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["remarks"])
-        wrapped.append((_wrap_line(draw, remarks, fnt, area_w), fnt))
-
-    # Slot (ONLY if not afternoon)
-    if slot and slot.strip().lower() != "afternoon":
-        fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["remarks"])
-        wrapped.append((_wrap_line(draw, slot, fnt, area_w), fnt))
-
-    # ---- Fit check loop (prevents overflow) ----
     while True:
-
-        total_h = 0
-        for lines, fnt in wrapped:
-            line_h = fnt.getbbox("Ag")[3] - fnt.getbbox("Ag")[1]
-            total_h += len(lines) * line_h + (len(lines)-1) * line_spacing_px
-
-        if total_h <= area_h:
-            break
-
-        # shrink dish font slightly if overflow
-        new_size = max(40, CARRYBAG_FONT_SIZES["dish"] - 5)
-        CARRYBAG_FONT_SIZES["dish"] = new_size
 
         wrapped = []
 
         if client:
-            fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["client"])
-            wrapped.append((_wrap_line(draw, client, fnt, area_w), fnt))
+            fnt_client = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["client"])
+            wrapped.append((_wrap_line(draw, client, fnt_client, area_w), fnt_client))
 
         for dish in dishes:
-            if dish:
-                fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["dish"])
-                wrapped.append((_wrap_line(draw, dish, fnt, area_w), fnt))
+            fnt_dish = _ImageFont.truetype(font_path, dish_size)
+            wrapped.append((_wrap_line(draw, dish, fnt_dish, area_w), fnt_dish))
 
         if meal_type:
-            fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["meal"])
-            wrapped.append((_wrap_line(draw, _clean_meal_type(meal_type), fnt, area_w), fnt))
+            fnt_meal = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["meal"])
+            wrapped.append((_wrap_line(draw, _clean_meal_type(meal_type), fnt_meal, area_w), fnt_meal))
 
         if remarks:
-            fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["remarks"])
-            wrapped.append((_wrap_line(draw, remarks, fnt, area_w), fnt))
+            fnt_rem = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["remarks"])
+            wrapped.append((_wrap_line(draw, remarks, fnt_rem, area_w), fnt_rem))
 
         if slot and slot.strip().lower() != "afternoon":
-            fnt = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["remarks"])
-            wrapped.append((_wrap_line(draw, slot, fnt, area_w), fnt))
+            fnt_slot = _ImageFont.truetype(font_path, CARRYBAG_FONT_SIZES["remarks"])
+            wrapped.append((_wrap_line(draw, slot, fnt_slot, area_w), fnt_slot))
 
-    # ---- Draw centered ----
-    y = margin_y + (area_h - total_h) // 2
+        total_h = 0
+        line_spacing_px = int(LINE_SPACING_FACTOR * dish_size)
+
+        for lines, fnt in wrapped:
+            line_h = fnt.getbbox("Ag")[3] - fnt.getbbox("Ag")[1]
+            total_h += len(lines)*line_h + (len(lines)-1)*line_spacing_px
+
+        if total_h <= area_h:
+            break
+
+        dish_size -= 4
+        if dish_size < 40:
+            break
+
+    y = margin_y + (area_h-total_h)//2
 
     for lines, fnt in wrapped:
+
         line_h = fnt.getbbox("Ag")[3] - fnt.getbbox("Ag")[1]
 
         for line in lines:
-            x = margin_x + (area_w - draw.textlength(line, font=fnt)) // 2
-            draw.text((x, y), line, fill=TAG_TEXT_COLOR, font=fnt)
+
+            x = margin_x + (area_w-draw.textlength(line, font=fnt))//2
+            draw.text((x,y), line, fill=TAG_TEXT_COLOR, font=fnt)
+
             y += line_h + line_spacing_px
 
     return tag
