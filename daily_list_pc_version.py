@@ -1018,6 +1018,11 @@ def run_tag_generator_auto_bytes(authed: AuthorizedSession, spreadsheet_id: str,
                     "skip_all": itm["skip_all"],
                     "skip_type": itm["skip_type"]
                 })
+                slot_priority = {
+                "morning": 0,
+                "afternoon": 1,
+                "evening": 2
+            }
 
         carrybag_tags_data = []
         for (_k_client, _k_type, _k_slot), group in carry_groups.items():
@@ -1043,6 +1048,10 @@ def run_tag_generator_auto_bytes(authed: AuthorizedSession, spreadsheet_id: str,
                 "remarks": group["remarks"],
                 "slot": _k_slot
             })
+
+        carrybag_tags_data.sort(
+            key=lambda x: slot_priority.get(x["slot"].strip().lower(), 99)
+        )
 
         meal_count = len(meal_tags_data)
         carrybag_count = len(carrybag_tags_data)
